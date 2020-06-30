@@ -187,7 +187,7 @@ func skipToEnd(yylex interface{}) {
 %token <bytes> NULLX AUTO_INCREMENT APPROXNUM SIGNED UNSIGNED ZEROFILL
 
 // Supported SHOW tokens
-%token <bytes> COLLATION DATABASES TABLES VITESS_METADATA VSCHEMA FULL PROCESSLIST COLUMNS FIELDS ENGINES PLUGINS EXTENDED
+%token <bytes> COLLATION DATABASES SCHEMAS TABLES VITESS_METADATA VSCHEMA FULL PROCESSLIST COLUMNS FIELDS ENGINES PLUGINS EXTENDED
 
 // SET tokens
 %token <bytes> NAMES CHARSET GLOBAL SESSION ISOLATION LEVEL READ WRITE ONLY REPEATABLE COMMITTED UNCOMMITTED SERIALIZABLE
@@ -325,7 +325,7 @@ func skipToEnd(yylex interface{}) {
 %type <vindexParam> vindex_param
 %type <vindexParams> vindex_param_list vindex_params_opt
 %type <colIdent> id_or_var vindex_type vindex_type_opt
-%type <bytes> alter_object_type
+%type <bytes> alter_object_type dbs_or_schemas
 %type <ReferenceAction> fk_reference_action fk_on_delete fk_on_update
 
 %start any_command
@@ -1626,9 +1626,10 @@ show_statement:
   {
     $$ = &Show{Type: string($2) + " " + string($3)}
   }
-| SHOW DATABASES ddl_skip_to_end
+| SHOW dbs_or_schemas like_or_where_opt
   {
-    $$ = &Show{Type: string($2)}
+    showTablesOpt := &ShowTablesOpt{Filter:$3}
+    $$ = &Show{Type: string($2), ShowTablesOpt: showTablesOpt}
   }
 | SHOW ENGINES
   {
@@ -1717,6 +1718,10 @@ show_statement:
   {
     $$ = &Show{Type: string($2.String())}
   }
+
+dbs_or_schemas:
+  DATABASES
+| SCHEMAS
 
 tables_or_processlist:
   TABLES

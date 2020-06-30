@@ -795,19 +795,38 @@ func (e *Executor) handleShow(ctx context.Context, safeSession *SafeSession, sql
 			show.ShowTablesOpt.DbName = ""
 		}
 		sql = sqlparser.String(show)
-	case sqlparser.KeywordString(sqlparser.DATABASES), "vitess_keyspaces", "keyspaces":
+	case sqlparser.KeywordString(sqlparser.DATABASES), sqlparser.KeywordString(sqlparser.SCHEMAS), "vitess_keyspaces", "keyspaces":
 		keyspaces, err := e.resolver.resolver.GetAllKeyspaces(ctx)
 		if err != nil {
 			return nil, err
 		}
 
+		var template *regexp.Regexp
+		var extra string
+		if show.ShowTablesOpt != nil && show.ShowTablesOpt.Filter != nil {
+			// support like
+			if show.ShowTablesOpt.Filter.Like != "" {
+				like := show.ShowTablesOpt.Filter.Like
+				template, err = regexp.Compile(like)
+				if err != nil {
+					return nil, err
+				}
+				extra = fmt.Sprintf(" %s", like)
+			} else {
+				// TODO
+			}
+		}
+
 		rows := make([][]sqltypes.Value, len(keyspaces))
 		for i, v := range keyspaces {
+			if template != nil && !template.MatchString(v) {
+				continue
+			}
 			rows[i] = buildVarCharRow(v)
 		}
 
 		return &sqltypes.Result{
-			Fields:       buildVarCharFields("Databases"),
+			Fields:       buildVarCharFields("Databases" + extra),
 			Rows:         rows,
 			RowsAffected: uint64(len(rows)),
 		}, nil

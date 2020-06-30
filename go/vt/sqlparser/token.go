@@ -325,6 +325,7 @@ var keywords = map[string]int{
 	"rollback":            ROLLBACK,
 	"savepoint":           SAVEPOINT,
 	"schema":              SCHEMA,
+	"schemas":             SCHEMAS,
 	"second_microsecond":  UNUSED,
 	"select":              SELECT,
 	"sensitive":           UNUSED,
